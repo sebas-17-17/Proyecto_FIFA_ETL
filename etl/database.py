@@ -1,42 +1,92 @@
 """
 database.py
---------------------
-Módulo encargado de crear las conexiones a las bases de datos.
+-----------------------------------------
+Gestiona las conexiones a las bases de datos
+del proyecto FIFA.
+
+DB1 = Base de datos de negocio
+DB2 = Base de datos de parámetros y KPIs
 """
 
 import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 
-# Cargar variables del archivo .env
-load_dotenv("../config/.env")
 
+# ============================================================
+# UBICACIÓN DEL PROYECTO
+# ============================================================
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+ENV_FILE = BASE_DIR / "config" / ".env"
+
+load_dotenv(ENV_FILE)
+
+
+# ============================================================
+# CREAR CONEXIÓN
+# ============================================================
+
+def _crear_engine(prefix):
+    """
+    Crea una conexión SQLAlchemy utilizando las variables
+    de configuración correspondientes a una base de datos.
+    """
+
+    host = os.getenv(f"{prefix}_HOST")
+    port = os.getenv(f"{prefix}_PORT")
+    user = os.getenv(f"{prefix}_USER")
+    password = os.getenv(f"{prefix}_PASS")
+    database = os.getenv(f"{prefix}_NAME")
+
+    variables = {
+        "HOST": host,
+        "PORT": port,
+        "USER": user,
+        "PASS": password,
+        "NAME": database,
+    }
+
+    faltantes = [
+        nombre
+        for nombre, valor in variables.items()
+        if not valor
+    ]
+
+    if faltantes:
+        raise ValueError(
+            f"Faltan variables de configuración para {prefix}: "
+            f"{', '.join(faltantes)}"
+        )
+
+    return create_engine(
+        f"mysql+pymysql://"
+        f"{user}:{password}@{host}:{port}/{database}"
+    )
+
+
+# ============================================================
+# BASE DE DATOS DE NEGOCIO
+# ============================================================
 
 def get_db1_engine():
     """
-    Conexión a la Base de Negocio
+    Retorna la conexión a la base de datos de negocio.
     """
-    host = os.getenv("DB1_HOST")
-    port = os.getenv("DB1_PORT")
-    user = os.getenv("DB1_USER")
-    password = os.getenv("DB1_PASS")
-    database = os.getenv("DB1_NAME")
 
-    return create_engine(
-        f"mysql+pymysql://{user}:{password}@{host}:{port}/{database}"
-    )
+    return _crear_engine("DB1")
 
+
+# ============================================================
+# BASE DE DATOS DE PARÁMETROS
+# ============================================================
 
 def get_db2_engine():
     """
-    Conexión a la Base de Parámetros
+    Retorna la conexión a la base de datos de parámetros.
     """
-    host = os.getenv("DB2_HOST")
-    port = os.getenv("DB2_PORT")
-    user = os.getenv("DB2_USER")
-    password = os.getenv("DB2_PASS")
-    database = os.getenv("DB2_NAME")
 
-    return create_engine(
-        f"mysql+pymysql://{user}:{password}@{host}:{port}/{database}"
-    )
+    return _crear_engine("DB2")

@@ -1,14 +1,7 @@
 """
 transform.py
 -----------------------------------------
-Calcula los 4 KPIs del proyecto FIFA.
-
-Los KPI se calculan para todos los equipos disponibles
-en fifa_dataset.
-
-Los filtros como top_n y min_avg_goals se reservan
-para las visualizaciones del Dashboard y no eliminan
-equipos de las tablas KPI.
+Calcula todos los KPIs del proyecto FIFA.
 """
 
 import pandas as pd
@@ -53,12 +46,20 @@ def leer_dataset():
 
 
 # ============================================================
-# KPI 1 - PORCENTAJE DE VICTORIAS
+# KPI 1 - RANKING HISTÓRICO
 # ============================================================
 
 def calcular_kpi1():
 
+    parametros = obtener_parametros()
+
+    top = int(parametros["top_n"])
+
     df = leer_dataset()
+
+    # Agrupar por equipo para evitar equipos repetidos.
+    # Se suman las victorias, empates y derrotas
+    # de todas las ediciones disponibles.
 
     ranking = (
         df.groupby("team", as_index=False)
@@ -100,20 +101,30 @@ def calcular_kpi1():
             ]
         ]
         .sort_values(
-            "win_percentage",
+            "wins",
             ascending=False
         )
+        .head(top)
         .reset_index(drop=True)
     )
 
 
 # ============================================================
-# KPI 2 - PROMEDIO DE GOLES
+# KPI 2 - OFENSIVA
 # ============================================================
 
 def calcular_kpi2():
 
+    parametros = obtener_parametros()
+
+    minimo = float(
+        parametros["min_avg_goals"]
+    )
+
     df = leer_dataset()
+
+    # Agrupar por equipo para obtener
+    # un promedio histórico consolidado.
 
     ofensiva = (
         df.groupby("team", as_index=False)
@@ -155,6 +166,9 @@ def calcular_kpi2():
                 "avg_goals"
             ]
         ]
+        .query(
+            "avg_goals > @minimo"
+        )
         .sort_values(
             "avg_goals",
             ascending=False
@@ -171,7 +185,7 @@ def calcular_kpi3():
 
     df = leer_dataset()
 
-    evolucion = (
+    return (
         df.groupby("version")
         .agg(
             total_goals=(
@@ -188,21 +202,19 @@ def calcular_kpi3():
             )
         )
         .reset_index()
-        .sort_values(
-            "version"
-        )
+        .sort_values("version")
     )
-
-    return evolucion
 
 
 # ============================================================
-# KPI 4 - INDICE DE RENDIMIENTO
+# KPI 4 - RENDIMIENTO
 # ============================================================
 
 def calcular_kpi4():
 
     df = leer_dataset()
+
+    # Consolidar resultados por equipo.
 
     rendimiento = (
         df.groupby("team", as_index=False)
@@ -247,5 +259,6 @@ def calcular_kpi4():
             "performance_index",
             ascending=False
         )
+        .head(5)
         .reset_index(drop=True)
     )
