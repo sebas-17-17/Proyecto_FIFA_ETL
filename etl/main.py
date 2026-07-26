@@ -12,6 +12,11 @@ Flujo:
 El proceso está diseñado para ser
 reutilizado manualmente o desde Airflow.
 """
+import os
+from dotenv import load_dotenv
+
+# Cargar las variables de entorno desde el archivo .env
+load_dotenv()
 
 from extract import extract
 
